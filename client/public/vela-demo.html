@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VELA — Private Command Infrastructure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,200;0,300;0,400;1,300&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #0A0F0D;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  .phone-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px 48px;
+  }
+  .phone-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: #7C9E8A;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .phone-frame {
+    width: 340px;
+    background: #111;
+    border-radius: 44px;
+    padding: 12px;
+    box-shadow: 0 0 0 1px #2a2a2a, 0 0 0 2px #1a1a1a, 0 24px 60px rgba(0,0,0,0.6);
+    position: relative;
+  }
+  .phone-notch-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 28px;
+    margin-bottom: 4px;
+    position: relative;
+  }
+  .phone-notch {
+    width: 100px; height: 22px;
+    background: #111;
+    border-radius: 0 0 16px 16px;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    z-index: 2;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .phone-camera { width: 8px; height: 8px; border-radius: 50%; background: #1a1a1a; border: 1px solid #333; }
+  .phone-speaker { width: 40px; height: 4px; background: #222; border-radius: 2px; }
+  .phone-screen {
+    background: #0A0F0D;
+    border-radius: 34px;
+    overflow: hidden;
+    height: 660px;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-status-bar {
+    background: #0D1A12;
+    padding: 8px 20px 6px;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0;
+  }
+  .status-time { color: #E8EDE8; font-size: 12px; font-weight: 300; }
+  .status-icons { display: flex; gap: 5px; align-items: center; }
+  .status-icon { color: #E8EDE8; font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
+  .vela-header {
+    background: #0D1A12;
+    border-bottom: 0.5px solid #1A3028;
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .back-arrow { color: #C4A882; font-size: 16px; cursor: pointer; padding: 0 4px; }
+  .vela-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #1A3028; border: 1.5px solid #C4A882;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .vela-header-info { flex: 1; }
+  .vela-header-name { color: #E8EDE8; font-size: 13px; font-weight: 300; letter-spacing: 0.03em; }
+  .vela-header-status { color: #7C9E8A; font-size: 10px; font-family: 'IBM Plex Mono', monospace; margin-top: 1px; }
+  .header-action { color: #7C9E8A; font-size: 18px; cursor: pointer; padding: 0 4px; }
+  .scenario-tabs {
+    background: #0D1A12;
+    border-bottom: 0.5px solid #1A3028;
+    padding: 0 8px;
+    display: flex; gap: 0;
+    flex-shrink: 0;
+    overflow-x: auto;
+  }
+  .scenario-tabs::-webkit-scrollbar { display: none; }
+  .s-tab {
+    color: #5A6E62; font-size: 10px; font-family: 'IBM Plex Mono', monospace;
+    padding: 8px 10px; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; flex-shrink: 0;
+  }
+  .s-tab:hover { color: #C4A882; }
+  .s-tab.active { color: #C4A882; border-bottom-color: #C4A882; }
+  .msg-area {
+    flex: 1; padding: 12px 10px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .msg-area::-webkit-scrollbar { width: 3px; }
+  .msg-area::-webkit-scrollbar-thumb { background: #1A3028; border-radius: 2px; }
+  .msg-row { display: flex; gap: 7px; align-items: flex-end; }
+  .msg-row.user { flex-direction: row-reverse; }
+  .msg-av {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #1A3028; border: 1px solid #C4A882;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .msg-av.u { border-color: #7C9E8A; color: #7C9E8A; font-size: 8px; font-family: 'IBM Plex Mono', monospace; }
+  .bubble {
+    max-width: 84%; background: #0D1A12; border: 0.5px solid #1A3028;
+    border-radius: 4px 12px 12px 12px; padding: 9px 11px;
+    color: #8A9E90; font-size: 11.5px; line-height: 1.6; font-weight: 300;
+  }
+  .msg-row.user .bubble {
+    background: #1A3028; border-color: #2A4038;
+    border-radius: 12px 4px 12px 12px; color: #E8EDE8;
+  }
+  .bubble strong { color: #E8EDE8; font-weight: 400; }
+  .bubble .gold { color: #C4A882; }
+  .sec {
+    color: #C4A882; font-size: 9px; font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin: 8px 0 4px; padding-bottom: 3px; border-bottom: 0.5px solid #1A3028;
+  }
+  .sec:first-child { margin-top: 0; }
+  .bi { display: flex; gap: 6px; align-items: flex-start; padding: 4px 0; border-bottom: 0.5px solid #1A3028; }
+  .bi:last-child { border-bottom: none; }
+  .bd { width: 4px; height: 4px; border-radius: 50%; background: #C4A882; margin-top: 5px; flex-shrink: 0; }
+  .bd.g { background: #7C9E8A; }
+  .bd.d { background: #1A3028; border: 0.5px solid #2A3A30; }
+  .bt { color: #8A9E90; font-size: 11px; line-height: 1.5; }
+  .bt strong { color: #E8EDE8; font-weight: 400; }
+  .bt .tm { color: #5A6E62; font-family: 'IBM Plex Mono', monospace; font-size: 10px; margin-left: 4px; }
+  .vlink {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: #C4A882; font-size: 10px; font-family: 'IBM Plex Mono', monospace;
+    border: 0.5px solid #2A3A30; border-radius: 5px; padding: 4px 8px; margin-top: 5px;
+    cursor: default; text-decoration: none;
+  }
+  .vlink:hover { border-color: #C4A882; }
+  .rbadge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #0D1A12; border: 0.5px solid #1A3028;
+    border-radius: 20px; padding: 3px 8px;
+    color: #7C9E8A; font-size: 9px; font-family: 'IBM Plex Mono', monospace; margin: 3px 0;
+  }
+  .rdot { width: 4px; height: 4px; border-radius: 50%; background: #7C9E8A; }
+  .typing-ind { display: flex; gap: 3px; align-items: center; padding: 3px 0; }
+  .tdot { width: 4px; height: 4px; border-radius: 50%; background: #7C9E8A; opacity: 0.4; animation: tp 1.2s infinite; }
+  .tdot:nth-child(2) { animation-delay: 0.2s; }
+  .tdot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes tp { 0%,60%,100%{opacity:0.3;transform:translateY(0)} 30%{opacity:1;transform:translateY(-3px)} }
+  .input-row {
+    background: #0D1A12; border-top: 0.5px solid #1A3028;
+    padding: 8px 10px; display: flex; gap: 8px; align-items: center; flex-shrink: 0;
+  }
+  .msg-input {
+    flex: 1; background: #0A0F0D; border: 0.5px solid #1A3028;
+    border-radius: 18px; padding: 7px 12px;
+    color: #E8EDE8; font-size: 12px; font-weight: 300; outline: none;
+  }
+  .msg-input:focus { border-color: #C4A882; }
+  .msg-input::placeholder { color: #3A4E44; font-size: 11px; }
+  .send-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #C4A882; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .send-btn:hover { background: #D4B892; }
+  .home-bar { background: #0D1A12; padding: 8px; display: flex; justify-content: center; flex-shrink: 0; }
+  .home-indicator { width: 100px; height: 4px; background: #2A3A30; border-radius: 2px; }
+  .mktprev {
+    background: #0A0F0D; border: 0.5px solid #1A3028; border-radius: 6px;
+    padding: 8px; margin-top: 6px; max-height: 140px; overflow-y: auto;
+  }
+  .mktprev::-webkit-scrollbar { width: 2px; }
+  .mktprev::-webkit-scrollbar-thumb { background: #1A3028; }
+  .mktpage { margin-bottom: 8px; }
+  .mktpage h4 { color: #C4A882; font-size: 9px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.08em; margin: 0 0 4px; }
+  .mktpage p { color: #8A9E90; font-size: 10.5px; line-height: 1.5; margin: 0 0 3px; font-weight: 300; }
+  .mktpage .st { color: #E8EDE8; font-weight: 400; }
+  .abrief {
+    background: #0A0F0D; border: 0.5px solid #1A3028;
+    border-left: 2px solid #C4A882; border-radius: 0 6px 6px 0; padding: 8px 10px; margin-top: 6px;
+  }
+  .abrief .atitle { color: #C4A882; font-size: 9px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.1em; margin-bottom: 5px; }
+  .abrief .apt { color: #8A9E90; font-size: 10.5px; line-height: 1.5; padding: 2px 0; border-bottom: 0.5px solid #1A3028; }
+  .abrief .apt:last-child { border-bottom: none; }
+  .abrief .apt strong { color: #E8EDE8; }
+  .fade-in { animation: fi 0.25s ease forwards; }
+  @keyframes fi { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .hint-pill {
+    display: inline-block; background: #1A3028; color: #7C9E8A;
+    font-size: 9px; font-family: 'IBM Plex Mono', monospace;
+    padding: 3px 8px; border-radius: 10px; margin-top: 6px;
+    cursor: pointer; border: 0.5px solid #2A4038;
+  }
+  .hint-pill:hover { background: #2A4038; color: #C4A882; }
+  .cta-section {
+    margin-top: 28px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    width: 340px;
+  }
+  .cta-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; color: #5A6E62; letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .cta-btn {
+    width: 100%; background: #C4A882; border: none; border-radius: 8px;
+    padding: 14px 24px; font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px; font-weight: 300; color: #0A0F0D;
+    letter-spacing: 0.06em; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background 0.2s;
+  }
+  .cta-btn:hover { background: #D4B892; }
+  .cta-btn:active { background: #B49872; }
+  .cta-btn.sent { background: #1A3028; color: #7C9E8A; cursor: default; }
+  .cta-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px; color: #3A4E44; letter-spacing: 0.08em; text-align: center;
+  }
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal-box {
+    background: #0D1A12; border: 0.5px solid #1A3028;
+    border-radius: 16px; padding: 28px 24px; width: 300px;
+  }
+  .modal-logo { font-size: 18px; font-weight: 200; color: #E8EDE8; letter-spacing: 0.2em; margin-bottom: 4px; }
+  .modal-logo span { color: #C4A882; }
+  .modal-sub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #5A6E62; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px; }
+  .modal-label { font-size: 10px; color: #7C9E8A; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.08em; margin-bottom: 5px; margin-top: 12px; }
+  .modal-label:first-of-type { margin-top: 0; }
+  .modal-input {
+    width: 100%; background: #0A0F0D; border: 0.5px solid #1A3028;
+    border-radius: 6px; padding: 9px 12px; color: #E8EDE8;
+    font-size: 12px; font-weight: 300; outline: none; box-sizing: border-box;
+  }
+  .modal-input:focus { border-color: #C4A882; }
+  .modal-input::placeholder { color: #3A4E44; }
+  .modal-textarea {
+    width: 100%; background: #0A0F0D; border: 0.5px solid #1A3028;
+    border-radius: 6px; padding: 9px 12px; color: #E8EDE8;
+    font-size: 12px; font-weight: 300; outline: none; resize: none; height: 72px; box-sizing: border-box;
+  }
+  .modal-textarea:focus { border-color: #C4A882; }
+  .modal-textarea::placeholder { color: #3A4E44; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+  .modal-cancel {
+    flex: 1; background: none; border: 0.5px solid #1A3028; border-radius: 6px;
+    padding: 10px; color: #5A6E62; font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; letter-spacing: 0.06em; cursor: pointer;
+  }
+  .modal-cancel:hover { border-color: #7C9E8A; color: #7C9E8A; }
+  .modal-submit {
+    flex: 2; background: #C4A882; border: none; border-radius: 6px;
+    padding: 10px; color: #0A0F0D; font-size: 12px; font-weight: 300;
+    letter-spacing: 0.06em; cursor: pointer;
+  }
+  .modal-submit:hover { background: #D4B892; }
+  .modal-submit:disabled { background: #2A3A30; color: #5A6E62; cursor: default; }
+  .modal-err { color: #C47820; font-size: 10px; font-family: 'IBM Plex Mono', monospace; margin-top: 8px; display: none; }
+  .modal-success { text-align: center; padding: 12px 0; }
+  .modal-success .s-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #1A3028; border: 1px solid #C4A882;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+  }
+  .modal-success .s-title { color: #E8EDE8; font-size: 14px; font-weight: 300; margin-bottom: 6px; }
+  .modal-success .s-body { color: #7C9E8A; font-size: 11px; font-family: 'IBM Plex Mono', monospace; line-height: 1.6; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="phone-stage">
+  <div class="phone-label">VELA · Private Command Infrastructure</div>
+
+  <div class="phone-frame">
+    <div class="phone-notch-bar">
+      <div class="phone-notch">
+        <div class="phone-camera"></div>
+        <div class="phone-speaker"></div>
+        <div class="phone-camera"></div>
+      </div>
+    </div>
+    <div class="phone-screen">
+      <div class="phone-status-bar">
+        <span class="status-time">9:07</span>
+        <div class="status-icons">
+          <span class="status-icon">●●●●</span>
+          <span class="status-icon">WiFi</span>
+          <span class="status-icon">100%</span>
+        </div>
+      </div>
+      <div class="vela-header">
+        <span class="back-arrow">‹</span>
+        <div class="vela-avatar">
+          <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+            <circle cx="4" cy="4" r="1.2" fill="#C4A882"/>
+            <circle cx="12" cy="4" r="1.2" fill="#C4A882"/>
+            <circle cx="8" cy="8.5" r="1.6" fill="#C4A882"/>
+            <circle cx="2.5" cy="12" r="1.2" fill="#7C9E8A"/>
+            <circle cx="13.5" cy="12" r="1.2" fill="#7C9E8A"/>
+            <line x1="4" y1="4" x2="8" y2="8.5" stroke="#C4A882" stroke-width="0.6" opacity="0.5"/>
+            <line x1="12" y1="4" x2="8" y2="8.5" stroke="#C4A882" stroke-width="0.6" opacity="0.5"/>
+            <line x1="2.5" y1="12" x2="8" y2="8.5" stroke="#7C9E8A" stroke-width="0.6" opacity="0.5"/>
+            <line x1="13.5" y1="12" x2="8" y2="8.5" stroke="#7C9E8A" stroke-width="0.6" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="vela-header-info">
+          <div class="vela-header-name">Hannah · Chief of Staff</div>
+          <div class="vela-header-status">active · command layer</div>
+        </div>
+        <span class="header-action">⋮</span>
+      </div>
+
+      <div class="scenario-tabs">
+        <div class="s-tab active" onclick="switchS(0,this)">Morning Brief</div>
+        <div class="s-tab" onclick="switchS(1,this)">Research</div>
+        <div class="s-tab" onclick="switchS(2,this)">Analyst</div>
+      </div>
+
+      <div class="msg-area" id="msgs"></div>
+
+      <div class="input-row">
+        <input class="msg-input" id="inp" placeholder="Message Hannah..." onkeydown="hk(event)"/>
+        <button class="send-btn" onclick="hs()">
+          <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M1 7L13 1.5L9.5 7L13 12.5L1 7Z" fill="#0A0F0D"/></svg>
+        </button>
+      </div>
+      <div class="home-bar"><div class="home-indicator"></div></div>
+    </div>
+  </div>
+
+  <div class="cta-section">
+    <div class="cta-eyebrow">Private access · By introduction only</div>
+    <button class="cta-btn" id="ctaBtn" onclick="openModal()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M7 1L13 5v8H1V5L7 1z" stroke="#0A0F0D" stroke-width="1" fill="none"/>
+        <path d="M1 5l6 4 6-4" stroke="#0A0F0D" stroke-width="1"/>
+      </svg>
+      Request Access
+    </button>
+    <div class="cta-sub">VELA does not have a sign-up page. If you are reading this, you are already close.</div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modalOverlay" onclick="overlayClick(event)">
+  <div class="modal-box" id="modalBox">
+    <div class="modal-logo">VE<span>L</span>A</div>
+    <div class="modal-sub">Request Access · Private Command Infrastructure</div>
+    <div id="formView">
+      <div class="modal-label">Your name</div>
+      <input class="modal-input" id="mName" placeholder="Full name" />
+      <div class="modal-label">Email</div>
+      <input class="modal-input" id="mEmail" type="email" placeholder="you@company.com" />
+      <div class="modal-label">Who you are</div>
+      <textarea class="modal-textarea" id="mWho" placeholder="Tell us briefly — your role, what you're building, why VELA."></textarea>
+      <div class="modal-err" id="mErr">Please fill in all fields.</div>
+      <div class="modal-actions">
+        <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+        <button class="modal-submit" id="mSubmit" onclick="submitForm()">Set Sail →</button>
+      </div>
+    </div>
+    <div class="modal-success hidden" id="successView">
+      <div class="s-icon">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M3 9l4 4 8-8" stroke="#C4A882" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="s-title">Request received.</div>
+      <div class="s-body">You'll hear from us directly.<br>No pipeline. No sales call.<br>Just a conversation.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const sc = [
+  {
+    steps: [
+      { type:'h', delay:700, html:`<div class="sec">Good morning — 9:07</div>
+<div class="bi"><div class="bd"></div><div class="bt"><strong>3 appointments today.</strong> Prep notes below.</div></div>
+<div class="sec" style="margin-top:10px">Calendar</div>
+<div class="bi"><div class="bd g"></div><div class="bt"><strong>9:30am</strong> — Meridian Capital LP call<span class="tm">60 min · Zoom</span></div></div>
+<div class="bi"><div class="bd g"></div><div class="bt"><strong>1:00pm</strong> — Site walk w/ Marcus Chen<span class="tm">90 min · on-site</span></div></div>
+<div class="bi"><div class="bd d"></div><div class="bt"><strong>4:30pm</strong> — Pilot call: Ava Thornton<span class="tm">45 min · Zoom</span></div></div>
+<div class="sec" style="margin-top:10px">Urgent Emails — Drafted</div>
+<div class="bi"><div class="bd"></div><div class="bt"><strong>Robert Hale · Meridian</strong> — requesting financials before this morning's call.<br><span style="color:#7C9E8A;font-size:10.5px">Draft ready: Confirming attendance + updated brief attached.</span></div></div>
+<div class="bi"><div class="bd"></div><div class="bt"><strong>Elena Marsh · Crestview Dev</strong> — requesting a meeting this week.<br><span style="color:#7C9E8A;font-size:10.5px">Draft ready: Offering Tue 10am, Wed 2pm, Thu 11am — scheduling link included.</span></div></div>
+<div class="bi"><div class="bd"></div><div class="bt"><strong>Dr. Nolan · Medical Advisory</strong> — follow-up on protocol sign-off.<br><span style="color:#7C9E8A;font-size:10.5px">Draft ready: Confirming review in progress, response EOD Friday.</span></div></div>
+<div class="sec" style="margin-top:10px">Tasks Due Today</div>
+<div class="bi"><div class="bd"></div><div class="bt">Finalize investor brief v8 — <strong>send before 9:30am call</strong></div></div>
+<div class="bi"><div class="bd"></div><div class="bt">Sign vendor LOI — <strong>deadline today</strong></div></div>
+<div class="bi"><div class="bd"></div><div class="bt">Review legal terms draft — <strong>attorney call Friday</strong></div></div>
+<div class="sec" style="margin-top:10px">Reminders</div>
+<div class="bi"><div class="bd d"></div><div class="bt">Product launch — platform goes live <strong>Thursday</strong></div></div>
+<div class="bi"><div class="bd d"></div><div class="bt">Quarterly board report — <strong>due April 5</strong></div></div>
+<a class="vlink" href="#"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="#C4A882" stroke-width="0.8"/><path d="M4 6h4M6 4v4" stroke="#C4A882" stroke-width="0.8"/></svg> Meeting & Call Prep — Today</a>` },
+      { type:'p', text:'send all emails', hint:'↑ Tap to send' },
+      { type:'h', delay:1100, html:`<div class="rbadge"><div class="rdot"></div> Sending 3 emails now</div><br>
+<strong>Done.</strong> All three sent.<br><br>
+<div class="bi"><div class="bd g"></div><div class="bt">Robert Hale — brief attached, confirmed for 9:30am</div></div>
+<div class="bi"><div class="bd g"></div><div class="bt">Elena Marsh — 3 times offered, scheduling link included</div></div>
+<div class="bi"><div class="bd g"></div><div class="bt">Dr. Nolan — acknowledged, EOD Friday committed</div></div>` },
+      { type:'p', text:'where is the legal review on the contract?', hint:'↑ Tap to send' },
+      { type:'h', delay:900, html:`<div class="rbadge"><div class="rdot"></div> Checking Legal folder</div><br>
+The Crestview vendor contract review is complete. Your Legal agent flagged <strong>2 items</strong> for your attention.<br><br>
+<a class="vlink" href="#"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 2h5l3 3v5H2V2z" stroke="#C4A882" stroke-width="0.8"/><path d="M7 2v3h3" stroke="#C4A882" stroke-width="0.8"/></svg> Legal Review Folder · Google Drive</a><br>
+Or review the agent thread in your <span class="gold">VELA Group Chat →</span>` }
+    ]
+  },
+  {
+    steps: [
+      { type:'p', text:'Hannah, I need a full market study on Crestview Harbor — the waterfront development on the North Shore. Principals, comps, market position, everything.', hint:'↑ Tap to send' },
+      { type:'h', delay:800, html:`<div class="rbadge"><div class="rdot"></div> Dispatching to Research agent</div><br>
+On it. Tasked your Research agent with a full Crestview Harbor study — principals, competitive set, pricing comps, development status, key contacts.<br><br>
+<span style="color:#5A6E62;font-size:10px;font-family:'IBM Plex Mono',monospace">Est. completion: 4–6 min. You'll be notified here and in Telegram.</span>` },
+      { type:'h', delay:3000, html:`<div class="rbadge"><div class="rdot"></div> Research agent · complete</div><br>
+<strong>Crestview Harbor Market Study</strong> is ready. 4 pages. Posted to your Research folder.<br><br>
+<a class="vlink" href="#"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 2h5l3 3v5H2V2z" stroke="#C4A882" stroke-width="0.8"/><path d="M7 2v3h3" stroke="#C4A882" stroke-width="0.8"/></svg> Crestview Harbor Market Study · Drive</a>
+<div class="mktprev">
+<div class="mktpage"><h4>01 · Overview & Development Profile</h4><p>Crestview Harbor is a <span class="st">340-acre</span> mixed-use waterfront development on the North Shore, developed by <span class="st">Halcyon Group / Stonebridge Capital</span> JV. Positioned as the premier private marina community in the region.</p><p>Phase I: <span class="st">180 residences</span> delivered. Phase II underway. Marina and clubhouse operational.</p></div>
+<div class="mktpage"><h4>02 · Key Principals</h4><p><strong style="color:#E8EDE8">Elena Marsh</strong> — VP Development & Partnerships · Primary contact.<br><strong style="color:#E8EDE8">Thomas Aldridge</strong> — Founder, Halcyon Group · Decision-maker.<br><strong style="color:#E8EDE8">Stonebridge Capital</strong> — Equity partner, co-developer.</p></div>
+<div class="mktpage"><h4>03 · Competitive Positioning</h4><p>Units: <span class="st">$1.4M–$3.8M</span>. Comparable to Harborview Estates and Bluewater Point but with stronger marina premium. Resident demographic: avg net worth <span class="st">$18M+</span>, ages 40–65.</p></div>
+<div class="mktpage"><h4>04 · Strategic Recommendation</h4><p>Preferred partnership: <strong style="color:#E8EDE8">residency-based membership model</strong> bundled with Crestview club membership. Precedent in comparable waterfront communities.</p></div>
+</div>` }
+    ]
+  },
+  {
+    steps: [
+      { type:'h', delay:400, html:`Have you had a chance to review the financial model David sent over yesterday? He's asking for your thoughts before Thursday's call.` },
+      { type:'p', text:"No, haven't had time.", hint:'↑ Tap to send' },
+      { type:'h', delay:1000, html:`No problem. Here's what changed from the prior version:<br><br>
+<div class="bi"><div class="bd"></div><div class="bt">Revenue projections for Q3 revised <strong>down 11%</strong> — occupancy adjusted from 80% to 70%</div></div>
+<div class="bi"><div class="bd"></div><div class="bt">Operating expense line increased <strong>$120K</strong> — equipment lease reclassified from CapEx to OpEx</div></div>
+<div class="bi"><div class="bd"></div><div class="bt">EBITDA margin now shows <strong>29%</strong> vs. 34% in prior model</div></div>
+<div class="bi"><div class="bd"></div><div class="bt">New sensitivity table added — break-even at <strong>61% occupancy</strong></div></div>
+<div class="bi"><div class="bd"></div><div class="bt">Phase II capex estimate added: <strong>$1.8M</strong> — not in prior version</div></div>
+<br><span style="color:#7C9E8A;font-size:10px;font-family:'IBM Plex Mono',monospace">5 talking points for your call with David →</span><br><br>
+<div class="bi"><div class="bd"></div><div class="bt"><strong>1.</strong> Challenge the 70% occupancy assumption — what's the basis vs. comp set?</div></div>
+<div class="bi"><div class="bd"></div><div class="bt"><strong>2.</strong> Get clarity on the OpEx reclassification — impacts EBITDA optics for investors</div></div>
+<div class="bi"><div class="bd"></div><div class="bt"><strong>3.</strong> Ask whether break-even holds under the new lease structure</div></div>
+<div class="bi"><div class="bd"></div><div class="bt"><strong>4.</strong> Request Phase II capex breakdown before Thursday</div></div>
+<div class="bi"><div class="bd"></div><div class="bt"><strong>5.</strong> Ask David to rerun model at 74% occupancy as a mid-case scenario</div></div>` },
+      { type:'p', text:'Did you send this to the analyst for review?', hint:'↑ Tap to send' },
+      { type:'h', delay:1000, html:`Yes — tasked your Analyst agent as soon as the email arrived. The full review is already in Drive.<br><br>
+<div class="rbadge"><div class="rdot"></div> Analyst agent · brief posted</div>
+<div class="abrief">
+<div class="atitle">Analyst Summary · David's Model v3</div>
+<div class="apt"><strong>Model integrity:</strong> Structurally sound. Occupancy revision conservative but defensible given comp set.</div>
+<div class="apt"><strong>Key risk:</strong> OpEx reclassification suppresses EBITDA — recommend reverting for investor presentations.</div>
+<div class="apt"><strong>Upside case:</strong> At 76% occupancy, EBITDA recovers to 32.5% — within original range.</div>
+<div class="apt"><strong>Phase II:</strong> $1.8M capex estimate light by ~$250–350K vs. comparable builds.</div>
+</div>
+<a class="vlink" href="#" style="margin-top:8px"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 2h5l3 3v5H2V2z" stroke="#C4A882" stroke-width="0.8"/><path d="M7 2v3h3" stroke="#C4A882" stroke-width="0.8"/></svg> Full Analyst Brief · Google Drive</a>` }
+    ]
+  }
+];
+
+let cS=0, cStep=0, waiting=false, curText='';
+
+function switchS(i,el){
+  document.querySelectorAll('.s-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  cS=i; cStep=0; waiting=false;
+  document.getElementById('msgs').innerHTML='';
+  document.getElementById('inp').placeholder='Message Hannah...';
+  document.getElementById('inp').value='';
+  next();
+}
+
+function next(){
+  const steps=sc[cS].steps;
+  if(cStep>=steps.length) return;
+  const step=steps[cStep];
+  if(step.type==='p'){
+    waiting=true; curText=step.text;
+    document.getElementById('inp').placeholder=step.hint||'Type your message...';
+    showHintPill(step.text,step.hint);
+    return;
+  }
+  if(step.type==='h'){
+    showTyping();
+    setTimeout(()=>{ removeTyping(); addH(step.html); cStep++; setTimeout(next,350); },step.delay);
+  }
+}
+
+function showHintPill(text,label){
+  const msgs=document.getElementById('msgs');
+  const pill=document.createElement('div');
+  pill.id='hintPill'; pill.style.cssText='text-align:right;padding:2px 4px;';
+  pill.innerHTML=`<span class="hint-pill" onclick="sendHint()">${label||'↑ Tap to send'}</span>`;
+  msgs.appendChild(pill);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function sendHint(){
+  if(!waiting) return;
+  const pill=document.getElementById('hintPill');
+  if(pill) pill.remove();
+  addU(curText);
+  document.getElementById('inp').value='';
+  document.getElementById('inp').placeholder='Message Hannah...';
+  waiting=false; cStep++;
+  setTimeout(next,250);
+}
+
+function showTyping(){
+  const msgs=document.getElementById('msgs');
+  const row=document.createElement('div');
+  row.className='msg-row fade-in'; row.id='tRow';
+  row.innerHTML=`<div class="msg-av"><svg viewBox="0 0 16 16" fill="none" width="12" height="12"><circle cx="4" cy="4" r="1.2" fill="#C4A882"/><circle cx="12" cy="4" r="1.2" fill="#C4A882"/><circle cx="8" cy="8.5" r="1.6" fill="#C4A882"/><circle cx="2.5" cy="12" r="1.2" fill="#7C9E8A"/><circle cx="13.5" cy="12" r="1.2" fill="#7C9E8A"/></svg></div><div class="bubble" style="padding:8px 11px"><div class="typing-ind"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>`;
+  msgs.appendChild(row);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function removeTyping(){ const el=document.getElementById('tRow'); if(el) el.remove(); }
+
+function addH(html){
+  const msgs=document.getElementById('msgs');
+  const row=document.createElement('div');
+  row.className='msg-row fade-in';
+  row.innerHTML=`<div class="msg-av"><svg viewBox="0 0 16 16" fill="none" width="12" height="12"><circle cx="4" cy="4" r="1.2" fill="#C4A882"/><circle cx="12" cy="4" r="1.2" fill="#C4A882"/><circle cx="8" cy="8.5" r="1.6" fill="#C4A882"/><circle cx="2.5" cy="12" r="1.2" fill="#7C9E8A"/><circle cx="13.5" cy="12" r="1.2" fill="#7C9E8A"/></svg></div><div class="bubble">${html}</div>`;
+  msgs.appendChild(row);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function addU(text){
+  const msgs=document.getElementById('msgs');
+  const row=document.createElement('div');
+  row.className='msg-row user fade-in';
+  row.innerHTML=`<div class="bubble">${text}</div><div class="msg-av u">—</div>`;
+  msgs.appendChild(row);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function hs(){
+  const inp=document.getElementById('inp');
+  const val=inp.value.trim();
+  if(waiting){ sendHint(); return; }
+  if(val){
+    addU(val); inp.value='';
+    showTyping();
+    setTimeout(()=>{ removeTyping(); addH(`<span style="color:#5A6E62;font-size:10px;font-family:'IBM Plex Mono',monospace">Use the tabs above to explore specific scenarios.</span>`); },900);
+  }
+}
+
+function hk(e){ if(e.key==='Enter') hs(); }
+
+function openModal(){
+  document.getElementById('modalOverlay').classList.remove('hidden');
+  document.getElementById('formView').classList.remove('hidden');
+  document.getElementById('successView').classList.add('hidden');
+  document.getElementById('mName').value='';
+  document.getElementById('mEmail').value='';
+  document.getElementById('mWho').value='';
+  document.getElementById('mErr').style.display='none';
+  document.getElementById('mSubmit').disabled=false;
+  document.getElementById('mSubmit').textContent='Set Sail →';
+}
+
+function closeModal(){ document.getElementById('modalOverlay').classList.add('hidden'); }
+
+function overlayClick(e){ if(e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+function submitForm(){
+  const name=document.getElementById('mName').value.trim();
+  const email=document.getElementById('mEmail').value.trim();
+  const who=document.getElementById('mWho').value.trim();
+  const err=document.getElementById('mErr');
+  if(!name||!email||!who){ err.style.display='block'; return; }
+  err.style.display='none';
+  const btn=document.getElementById('mSubmit');
+  btn.disabled=true; btn.textContent='Sending...';
+  const subject=encodeURIComponent('VELA Access Request — '+name);
+  const body=encodeURIComponent('Name: '+name+'\nEmail: '+email+'\n\nWho I am:\n'+who);
+  const mailtoUrl='mailto:greg@gregshindler.com?subject='+subject+'&body='+body;
+  // Open mailto in the top-level window so it works correctly when embedded in an iframe
+  try { window.top.location.href = mailtoUrl; } catch(e) { window.location.href = mailtoUrl; }
+  setTimeout(()=>{
+    document.getElementById('formView').classList.add('hidden');
+    document.getElementById('successView').classList.remove('hidden');
+    document.getElementById('ctaBtn').className='cta-btn sent';
+    document.getElementById('ctaBtn').innerHTML='✓ &nbsp;Request sent';
+  },600);
+}
+
+next();
+</script>
+</body>
+</html>
