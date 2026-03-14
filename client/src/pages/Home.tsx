@@ -6,13 +6,172 @@
  * Typography: IBM Plex Sans 200/300, IBM Plex Mono 400, IBM Plex Serif Italic
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // ─── ASSET URLS ──────────────────────────────────────────────────────────────
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663282063473/8VT7xgZchuJYvZ9KBxsjVW/vela-hero-bg-jBboEqVZQFc5AtKL7tqw2Y.webp";
 const MANIFESTO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663282063473/8VT7xgZchuJYvZ9KBxsjVW/vela-manifesto-bg-VrgZGbMHhAixPdptPFDN9S.webp";
 const ACCESS_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663282063473/8VT7xgZchuJYvZ9KBxsjVW/vela-access-bg-YanyRBugwamzbCdSknuRKg.webp";
 const PDF_URL = "/VELA_OnePager.pdf";
+const NIGHT_PDF_URL = "/VELA_OnePager_Night.pdf";
+
+// ─── PDF DROPDOWN ─────────────────────────────────────────────────────────────
+function PdfDropdown({
+  label,
+  fontSize = "0.6875rem",
+  letterSpacing = "0.15em",
+  color = "#E8EDE8",
+  hoverColor = "#C4A882",
+  iconSize = { w: 10, h: 12 },
+  border,
+  padding,
+}: {
+  label: string;
+  fontSize?: string;
+  letterSpacing?: string;
+  color?: string;
+  hoverColor?: string;
+  iconSize?: { w: number; h: number };
+  border?: string;
+  padding?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const baseStyle: React.CSSProperties = {
+    fontFamily: "'IBM Plex Mono', monospace",
+    fontSize,
+    fontWeight: 400,
+    letterSpacing,
+    textTransform: "uppercase",
+    color,
+    textDecoration: "none",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    transition: "color 0.15s ease, border-color 0.15s ease",
+    cursor: "pointer",
+    background: "none",
+    ...(border ? { border, padding } : { border: "none", padding: padding || 0 }),
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={baseStyle}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.color = hoverColor;
+          if (border) (e.currentTarget as HTMLButtonElement).style.borderColor = hoverColor;
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.color = color;
+          if (border) (e.currentTarget as HTMLButtonElement).style.borderColor = "#7C9E8A";
+        }}
+      >
+        <svg width={iconSize.w} height={iconSize.h} viewBox="0 0 10 12" fill="none">
+          <path d="M5 0v8M1 5l4 4 4-4M0 11h10" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+        {label}
+        <svg width="8" height="5" viewBox="0 0 8 5" fill="none" style={{ marginLeft: "0.25rem" }}>
+          <path d={open ? "M0 4l4-4 4 4" : "M0 0l4 4 4-4"} stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      </button>
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            marginTop: "0.375rem",
+            background: "#0D1A12",
+            border: "1px solid #7C9E8A",
+            zIndex: 100,
+            minWidth: "200px",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <a
+            href={PDF_URL}
+            download="VELA_Day_OnePager.pdf"
+            onClick={() => setOpen(false)}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: fontSize,
+              fontWeight: 400,
+              letterSpacing,
+              textTransform: "uppercase",
+              color: "#E8EDE8",
+              textDecoration: "none",
+              padding: "0.625rem 0.875rem",
+              transition: "background 0.15s ease, color 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = "rgba(196,168,130,0.1)";
+              (e.currentTarget as HTMLAnchorElement).style.color = "#C4A882";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+              (e.currentTarget as HTMLAnchorElement).style.color = "#E8EDE8";
+            }}
+          >
+            <svg width={iconSize.w} height={iconSize.h} viewBox="0 0 10 12" fill="none">
+              <path d="M5 0v8M1 5l4 4 4-4M0 11h10" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+            Day One Pager
+          </a>
+          <div style={{ height: "1px", background: "#7C9E8A", opacity: 0.4 }} />
+          <a
+            href={NIGHT_PDF_URL}
+            download="VELA_Night_OnePager.pdf"
+            onClick={() => setOpen(false)}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: fontSize,
+              fontWeight: 400,
+              letterSpacing,
+              textTransform: "uppercase",
+              color: "#E8EDE8",
+              textDecoration: "none",
+              padding: "0.625rem 0.875rem",
+              transition: "background 0.15s ease, color 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = "rgba(196,168,130,0.1)";
+              (e.currentTarget as HTMLAnchorElement).style.color = "#C4A882";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+              (e.currentTarget as HTMLAnchorElement).style.color = "#E8EDE8";
+            }}
+          >
+            <svg width={iconSize.w} height={iconSize.h} viewBox="0 0 10 12" fill="none">
+              <path d="M5 0v8M1 5l4 4 4-4M0 11h10" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+            Night One Pager
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── SECTION LABEL ───────────────────────────────────────────────────────────
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -183,38 +342,15 @@ export default function Home() {
             >
               PRIVATE COMMAND INFRASTRUCTURE
             </span>
-            <a
-              href={PDF_URL}
-              download="VELA_OnePager.pdf"
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: "0.625rem",
-                fontWeight: 400,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "#C4A882",
-                textDecoration: "none",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                transition: "color 0.15s ease",
-                border: "1px solid #7C9E8A",
-                padding: "0.5rem 0.875rem",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.color = "#E8EDE8";
-                (e.currentTarget as HTMLAnchorElement).style.borderColor = "#C4A882";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.color = "#C4A882";
-                (e.currentTarget as HTMLAnchorElement).style.borderColor = "#7C9E8A";
-              }}
-            >
-              <svg width="10" height="12" viewBox="0 0 10 12" fill="none">
-                <path d="M5 0v8M1 5l4 4 4-4M0 11h10" stroke="currentColor" strokeWidth="1.2" />
-              </svg>
-              Download PDF
-            </a>
+            <PdfDropdown
+              label="Download PDF"
+              fontSize="0.625rem"
+              letterSpacing="0.18em"
+              color="#C4A882"
+              hoverColor="#E8EDE8"
+              border="1px solid #7C9E8A"
+              padding="0.5rem 0.875rem"
+            />
           </div>
         </div>
       </nav>
@@ -323,35 +459,12 @@ export default function Home() {
             <a href="#what-is-vela" className="vela-ghost">
               What is VELA
             </a>
-            <a
-              href={PDF_URL}
-              download="VELA_OnePager.pdf"
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: "0.6875rem",
-                fontWeight: 400,
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                color: "#E8EDE8",
-                textDecoration: "none",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                transition: "color 0.15s ease",
-                padding: "0.875rem 0",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.color = "#C4A882";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.color = "#E8EDE8";
-              }}
-            >
-              <svg width="10" height="12" viewBox="0 0 10 12" fill="none">
-                <path d="M5 0v8M1 5l4 4 4-4M0 11h10" stroke="currentColor" strokeWidth="1.2" />
-              </svg>
-              Download One-Pager
-            </a>
+            <PdfDropdown
+              label="Download One-Pager"
+              color="#E8EDE8"
+              hoverColor="#C4A882"
+              padding="0.875rem 0"
+            />
           </div>
         </div>
       </section>
@@ -1294,34 +1407,11 @@ export default function Home() {
             Request Access
           </a>
 
-          <a
-            href={PDF_URL}
-            download="VELA_OnePager.pdf"
-            style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "0.6875rem",
-              fontWeight: 400,
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              color: "#E8EDE8",
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              transition: "color 0.15s ease",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.color = "#C4A882";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.color = "#E8EDE8";
-            }}
-          >
-            <svg width="10" height="12" viewBox="0 0 10 12" fill="none">
-              <path d="M5 0v8M1 5l4 4 4-4M0 11h10" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
-            Download the One-Pager PDF
-          </a>
+          <PdfDropdown
+            label="Download the One-Pager PDF"
+            color="#E8EDE8"
+            hoverColor="#C4A882"
+          />
 
           <p
             className="vela-label"
@@ -1368,33 +1458,13 @@ export default function Home() {
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-            <a
-              href={PDF_URL}
-              download="VELA_OnePager.pdf"
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: "0.625rem",
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                color: "#E8EDE8",
-                textDecoration: "none",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.375rem",
-                transition: "color 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.color = "#C4A882";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.color = "#E8EDE8";
-              }}
-            >
-              <svg width="8" height="10" viewBox="0 0 10 12" fill="none">
-                <path d="M5 0v8M1 5l4 4 4-4M0 11h10" stroke="currentColor" strokeWidth="1.2" />
-              </svg>
-              One-Pager PDF
-            </a>
+            <PdfDropdown
+              label="One-Pager PDF"
+              fontSize="0.625rem"
+              color="#E8EDE8"
+              hoverColor="#C4A882"
+              iconSize={{ w: 8, h: 10 }}
+            />
             <span
               className="vela-label"
               style={{ color: "#E8EDE8" }}
